@@ -2905,14 +2905,12 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
     CAmount nExpectedMint = 0;
     uint64_t nCoinAge = 0;
-    bool test = GetCoinAge(block.vtx[1], block.vtx[1].nTime, nCoinAge);
-    nCoinAge = 0;
     if (block.IsProofOfStake())
     {
         if (pindex->nHeight < Params().WALLET_UPGRADE_BLOCK())
         {
             nExpectedMint = nFees;
-            if (!GetCoinAge(block.vtx[1], block.vtx[1].nTime, nCoinAge))
+            if (!GetCoinAge(block.vtx[1], block.vtx[1].nTime, nCoinAge)) // need to use block time as transaction time since nTime=0 from now on
                 return error("ConnectBlock() : %s unable to get coin age for coinstake", block.vtx[1].GetHash().ToString().substr(0,10).c_str());
         }
 
