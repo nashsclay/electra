@@ -913,7 +913,7 @@ bool GetCoinAge(const CTransaction& tx, const unsigned int nTxTime, uint64_t& nC
             return false; // Transaction timestamp violation
         }
 
-        unsigned int nTimeDiff = nTxTime - prevblock.nTime;
+        unsigned int nTimeDiff = nTxTime - txPrev.nTime; // switch to prevblock.nTime after upgrade
         if (pindex->nHeight >= Params().WALLET_UPGRADE_BLOCK() && nTimeDiff > nStakeMaxAgeNew)
             nTimeDiff = nStakeMaxAgeNew;
         else if (pindex->nHeight >= nHardForkBlock && nTimeDiff > nStakeMaxAge)
@@ -1838,7 +1838,7 @@ double ConvertBitsToDouble(unsigned int nBits)
     return dDiff;
 }
 
-int64_t GetBlockValue(int nHeight, bool fProofOfStake, int64_t nCoinAge)
+int64_t GetBlockValue(int nHeight, bool fProofOfStake, uint64_t nCoinAge)
 {
     if (Params().NetworkID() == CBaseChainParams::TESTNET) {
         if (nHeight < 200 && nHeight > 0)
@@ -1871,7 +1871,7 @@ int64_t GetBlockValue(int nHeight, bool fProofOfStake, int64_t nCoinAge)
 			else // eighth year and beyond
 				nRewardCoinYear = 0.02 * CENT; // 0.02% interest
 
-			if (nCoinAge == 0)
+			if (nCoinAge == uint64_t(0))
 				nSubsidy = nRewardCoinYear / 500;
 			else
 				nSubsidy = nCoinAge * nRewardCoinYear / 365;
