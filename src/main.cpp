@@ -881,8 +881,8 @@ bool GetCoinAge(const CTransaction& tx, const unsigned int nTxTime, uint64_t& nC
     uint256 bnCentSecond = 0; // coin age in the unit of cent-seconds
     nCoinAge = 0;
 
-	int64_t nLastOldPoSBlock = 17100;
-	int64_t nHardForkBlock = 112200;
+    int64_t nLastOldPoSBlock = 17100;
+    int64_t nHardForkBlock = 112200;
 
     CBlockIndex* pindex = NULL;
     BOOST_FOREACH (const CTxIn& txin, tx.vin) {
@@ -913,7 +913,7 @@ bool GetCoinAge(const CTransaction& tx, const unsigned int nTxTime, uint64_t& nC
             return false; // Transaction timestamp violation
         }
 
-        unsigned int nTimeDiff = nTxTime - txPrev.nTime; // switch to prevblock.nTime after upgrade
+        unsigned int nTimeDiff = nTxTime - (pindex->nHeight>=Params().WALLET_UPGRADE_BLOCK() ? prevblock.nTime : txPrev.nTime); // switch to prevblock.nTime after upgrade
         if (pindex->nHeight >= Params().WALLET_UPGRADE_BLOCK() && nTimeDiff > nStakeMaxAgeNew)
             nTimeDiff = nStakeMaxAgeNew;
         else if (pindex->nHeight >= nHardForkBlock && nTimeDiff > nStakeMaxAge)
@@ -921,7 +921,6 @@ bool GetCoinAge(const CTransaction& tx, const unsigned int nTxTime, uint64_t& nC
 
         int64_t nValueIn = txPrev.vout[txin.prevout.n].nValue;
         bnCentSecond += uint256(nValueIn) * nTimeDiff;
-LogPrintf("coin age nValueIn=%"PRId64" nTimeDiff=%d bnCentSecond=%s\n", nValueIn, nTimeDiff, bnCentSecond.ToString().c_str());
     }
 
     uint256 bnCoinDay;
@@ -932,7 +931,6 @@ LogPrintf("coin age nValueIn=%"PRId64" nTimeDiff=%d bnCentSecond=%s\n", nValueIn
 
     LogPrintf("coin age bnCoinDay=%s\n", bnCoinDay.ToString().c_str());
     nCoinAge = bnCoinDay.Get64();
-    LogPrintf("nCoinAge=%"PRId64"\n", nCoinAge);
     return true;
 }
 
@@ -2911,7 +2909,12 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         if (pindex->nHeight < Params().WALLET_UPGRADE_BLOCK())
         {
             nExpectedMint = nFees;
-            if (!GetCoinAge(block.vtx[1], block.vtx[1].nTime, nCoinAge)) // need to use block time as transaction time since nTime=0 from now on
+            if (!GetCoinAge(block.vtx[1], block.vtx[1].nTime, nCoinAge))
+                return error("ConnectBlock() : %s unable to get coin age for coinstake", block.vtx[1].GetHash().ToString().substr(0,10).c_str());
+        }
+        else
+        {
+            if (!GetCoinAge(block.vtx[1], block.nTime, nCoinAge)) // need to use block time instead of transaction time since tx.nTime=0 after upgrade
                 return error("ConnectBlock() : %s unable to get coin age for coinstake", block.vtx[1].GetHash().ToString().substr(0,10).c_str());
         }
 
@@ -2924,11 +2927,9 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
 
     //Check that the block does not overmint
     if (!IsBlockValueValid(block, nExpectedMint, pindex->nMint)) {
-        /*return state.DoS(100, error("ConnectBlock() : reward pays too much (actual=%s vs limit=%s)",
+        return state.DoS(100, error("ConnectBlock() : reward pays too much (actual=%s vs limit=%s)",
                                     FormatMoney(pindex->nMint), FormatMoney(nExpectedMint)),
-                         REJECT_INVALID, "bad-cb-amount");*/
-        LogPrintf("ConnectBlock() : reward pays too much (actual=%s vs limit=%s)\n",
-                                    FormatMoney(pindex->nMint), FormatMoney(nExpectedMint));
+                         REJECT_INVALID, "bad-cb-amount");
     }
 
     // Ensure that accumulator checkpoints are valid and in the same state as this instance of the chain
