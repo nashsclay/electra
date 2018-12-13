@@ -931,7 +931,8 @@ LogPrintf("coin age nValueIn=%"PRId64" nTimeDiff=%d bnCentSecond=%s\n", nValueIn
         bnCoinDay = bnCentSecond / (24 * 60 * 60);
 
     LogPrintf("coin age bnCoinDay=%s\n", bnCoinDay.ToString().c_str());
-    nCoinAge = bnCoinDay.GetCompact();
+    nCoinAge = bnCoinDay.Get64();
+    LogPrintf("nCoinAge=%"PRId64"\n", nCoinAge);
     return true;
 }
 
@@ -2926,7 +2927,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         /*return state.DoS(100, error("ConnectBlock() : reward pays too much (actual=%s vs limit=%s)",
                                     FormatMoney(pindex->nMint), FormatMoney(nExpectedMint)),
                          REJECT_INVALID, "bad-cb-amount");*/
-        LogPrintf("ConnectBlock() : reward pays too much (actual=%s vs limit=%s)",
+        LogPrintf("ConnectBlock() : reward pays too much (actual=%s vs limit=%s)\n",
                                     FormatMoney(pindex->nMint), FormatMoney(nExpectedMint));
     }
 
