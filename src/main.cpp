@@ -876,7 +876,7 @@ int GetIXConfirmations(uint256 nTXHash)
 // guaranteed to be in main chain by sync-checkpoint. This rule is
 // introduced to help nodes establish a consistent view of the coin
 // age (trust score) of competing branches.
-bool GetCoinAge(const CTransaction& tx, const unsigned int nTxTime, uint64_t& nCoinAge)
+bool GetCoinAge(const CTransaction& tx, const unsigned int nTxTime, int nBestHeight, uint64_t& nCoinAge)
 {
     uint256 bnCentSecond = 0; // coin age in the unit of cent-seconds
     nCoinAge = 0;
@@ -905,7 +905,7 @@ bool GetCoinAge(const CTransaction& tx, const unsigned int nTxTime, uint64_t& nC
         // Read block header
         CBlockHeader prevblock = pindex->GetBlockHeader();
 
-        if (prevblock.nTime + (pindex->nHeight>=nHardForkBlock ? nStakeMinAge : nStakeMinAgeOld) > nTxTime)
+        if (prevblock.nTime + (nBestHeight+1>=nHardForkBlock ? nStakeMinAge : nStakeMinAgeOld) > nTxTime)
             continue; // only count coins meeting min age requirement
 
         if (nTxTime < prevblock.nTime) {
@@ -913,24 +913,26 @@ bool GetCoinAge(const CTransaction& tx, const unsigned int nTxTime, uint64_t& nC
             return false; // Transaction timestamp violation
         }
 
-        unsigned int nTimeDiff = nTxTime - (pindex->nHeight>=Params().WALLET_UPGRADE_BLOCK() ? prevblock.nTime : txPrev.nTime); // switch to prevblock.nTime after upgrade
-        if (pindex->nHeight >= Params().WALLET_UPGRADE_BLOCK() && nTimeDiff > nStakeMaxAgeNew)
+        unsigned int nTimeDiff = nTxTime - (nBestHeight+1>=Params().WALLET_UPGRADE_BLOCK() ? prevblock.nTime : txPrev.nTime); // switch to prevblock.nTime after upgrade
+        if (nBestHeight + 1 >= Params().WALLET_UPGRADE_BLOCK() && nTimeDiff > nStakeMaxAgeNew)
             nTimeDiff = nStakeMaxAgeNew;
-        else if (pindex->nHeight >= nHardForkBlock && nTimeDiff > nStakeMaxAge)
+        else if (nBestHeight + 1 >= nHardForkBlock && nTimeDiff > nStakeMaxAge)
             nTimeDiff = nStakeMaxAge;
 
         int64_t nValueIn = txPrev.vout[txin.prevout.n].nValue;
         bnCentSecond += uint256(nValueIn) * nTimeDiff;
+        //LogPrintf("coin age nValueIn=%"PRId64" nTimeDiff=%d bnCentSecond=%s\n", nValueIn, nTimeDiff, bnCentSecond.ToString().c_str());
     }
 
     uint256 bnCoinDay;
-    if (pindex->nHeight > nLastOldPoSBlock)
+    if (nBestHeight > nLastOldPoSBlock)
         bnCoinDay = bnCentSecond / COIN / (24 * 60 * 60);
     else
         bnCoinDay = bnCentSecond / (24 * 60 * 60);
 
     LogPrintf("coin age bnCoinDay=%s\n", bnCoinDay.ToString().c_str());
     nCoinAge = bnCoinDay.Get64();
+    //LogPrintf("nCoinAge=%"PRId64"\n", nCoinAge);
     return true;
 }
 
@@ -2909,12 +2911,12 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         if (pindex->nHeight < Params().WALLET_UPGRADE_BLOCK())
         {
             nExpectedMint = nFees;
-            if (!GetCoinAge(block.vtx[1], block.vtx[1].nTime, nCoinAge))
+            if (!GetCoinAge(block.vtx[1], block.vtx[1].nTime, pindex->nHeight-1, nCoinAge))
                 return error("ConnectBlock() : %s unable to get coin age for coinstake", block.vtx[1].GetHash().ToString().substr(0,10).c_str());
         }
         else
         {
-            if (!GetCoinAge(block.vtx[1], block.nTime, nCoinAge)) // need to use block time instead of transaction time since tx.nTime=0 after upgrade
+            if (!GetCoinAge(block.vtx[1], block.nTime, pindex->nHeight-1, nCoinAge)) // need to use block time instead of transaction time since tx.nTime=0 after upgrade
                 return error("ConnectBlock() : %s unable to get coin age for coinstake", block.vtx[1].GetHash().ToString().substr(0,10).c_str());
         }
 
