@@ -81,6 +81,8 @@ bool fVerifyingBlocks = false;
 unsigned int nCoinCacheSize = 5000;
 bool fAlerts = DEFAULT_ALERTS;
 
+unsigned int nLastOldPoSBlock = 17100;
+unsigned int nHardForkBlock = 112200;
 unsigned int nStakeMinAge = 12 * 60 * 60; // 12 hours
 unsigned int nStakeMinAgeOld = 24 * 60 * 60; // 24 hours
 unsigned int nStakeMaxAge = 30 * 24 * 60 * 60; // 30 days
@@ -881,9 +883,6 @@ bool GetCoinAge(const CTransaction& tx, const unsigned int nTxTime, int nBestHei
     uint256 bnCentSecond = 0; // coin age in the unit of cent-seconds
     nCoinAge = 0;
 
-    int64_t nLastOldPoSBlock = 17100;
-    int64_t nHardForkBlock = 112200;
-
     CBlockIndex* pindex = NULL;
     BOOST_FOREACH (const CTxIn& txin, tx.vin) {
         // First try finding the previous transaction in database
@@ -914,7 +913,7 @@ bool GetCoinAge(const CTransaction& tx, const unsigned int nTxTime, int nBestHei
         }
 
         unsigned int nTimeDiff = nTxTime - (nBestHeight+1>=Params().WALLET_UPGRADE_BLOCK() ? prevblock.nTime : txPrev.nTime); // switch to prevblock.nTime after upgrade
-        if (nBestHeight + 1 >= Params().WALLET_UPGRADE_BLOCK() && nTimeDiff > nStakeMaxAgeNew)
+        if (nTimeDiff > nStakeMaxAgeNew && nBestHeight + 1 >= Params().WALLET_UPGRADE_BLOCK())
             nTimeDiff = nStakeMaxAgeNew;
         //else if (nBestHeight + 1 >= nHardForkBlock && nTimeDiff > nStakeMaxAge)
             //nTimeDiff = nStakeMaxAge;
@@ -1846,8 +1845,6 @@ int64_t GetBlockValue(int nHeight, bool fProofOfStake, uint64_t nCoinAge)
             return 250000 * COIN;
     }
 
-	int64_t nLastOldPoSBlock = 17100;
-	int64_t nHardForkBlock = 112200;
 	int64_t nRewardCoinYear = 50 * CENT; // 50% interest
 
 	int64_t nSubsidy = 0;
@@ -2926,6 +2923,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     {
         nExpectedMint = GetBlockValue(pindex->nHeight, false, nCoinAge) + nFees;
     }
+    LogPrintf("ConnectBlock() : INFO : Block reward (actual=%s vs limit=%s)\n", FormatMoney(pindex->nMint), FormatMoney(nExpectedMint));
 
     //Check that the block does not overmint
     if (!IsBlockValueValid(block, nExpectedMint, pindex->nMint)) {
