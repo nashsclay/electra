@@ -916,8 +916,8 @@ bool GetCoinAge(const CTransaction& tx, const unsigned int nTxTime, int nBestHei
         unsigned int nTimeDiff = nTxTime - (nBestHeight+1>=Params().WALLET_UPGRADE_BLOCK() ? prevblock.nTime : txPrev.nTime); // switch to prevblock.nTime after upgrade
         if (nBestHeight + 1 >= Params().WALLET_UPGRADE_BLOCK() && nTimeDiff > nStakeMaxAgeNew)
             nTimeDiff = nStakeMaxAgeNew;
-        else if (nBestHeight + 1 >= nHardForkBlock && nTimeDiff > nStakeMaxAge)
-            nTimeDiff = nStakeMaxAge;
+        //else if (nBestHeight + 1 >= nHardForkBlock && nTimeDiff > nStakeMaxAge)
+            //nTimeDiff = nStakeMaxAge;
 
         int64_t nValueIn = txPrev.vout[txin.prevout.n].nValue;
         bnCentSecond += uint256(nValueIn) * nTimeDiff;
