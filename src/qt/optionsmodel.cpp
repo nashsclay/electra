@@ -1,6 +1,7 @@
 // Copyright (c) 2011-2014 The Bitcoin developers
 // Copyright (c) 2014-2015 The Dash developers
-// Copyright (c) 2015-2018 The PIVX developers
+// Copyright (c) 2015-2018 The Pivx developers 
+// Copyright (c) 2018 The Myce developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -62,7 +63,7 @@ void OptionsModel::Init()
 
     // Display
     if (!settings.contains("nDisplayUnit"))
-        settings.setValue("nDisplayUnit", BitcoinUnits::PIV);
+        settings.setValue("nDisplayUnit", BitcoinUnits::YCE);
     nDisplayUnit = settings.value("nDisplayUnit").toInt();
 
     if (!settings.contains("strThirdPartyTxUrls"))
@@ -167,7 +168,7 @@ void OptionsModel::Init()
     if (settings.contains("nPreferredDenom"))
         SoftSetArg("-preferredDenom", settings.value("nPreferredDenom").toString().toStdString());
     if (settings.contains("nAnonymizeMyceAmount"))
-        SoftSetArg("-anonymizepivxamount", settings.value("nAnonymizeMyceAmount").toString().toStdString());
+        SoftSetArg("-anonymizemyceamount", settings.value("nAnonymizeMyceAmount").toString().toStdString());
 
     language = settings.value("language").toString();
 }
@@ -178,7 +179,7 @@ void OptionsModel::Reset()
 
     // Remove all entries from our QSettings object
     settings.clear();
-    resetSettings = true; // Needed in pivx.cpp during shotdown to also remove the window positions
+    resetSettings = true; // Needed in myce.cpp during shotdown to also remove the window positions
 
     // default setting for OptionsModel::StartAtStartup - disabled
     if (GUIUtil::GetStartOnSystemStartup())
@@ -258,7 +259,7 @@ QVariant OptionsModel::data(const QModelIndex& index, int role) const
             return QVariant(nZeromintPercentage);
         case ZeromintPrefDenom:
             return QVariant(nPreferredDenom);
-        case AnonymizePivxAmount:
+        case AnonymizeMyceAmount:
             return QVariant(nAnonymizeMyceAmount);
         case Listen:
             return settings.value("fListen");
@@ -388,10 +389,10 @@ bool OptionsModel::setData(const QModelIndex& index, const QVariant& value, int 
             emit hideZeroBalancesChanged(fHideZeroBalances);
             break;
 
-        case AnonymizePivxAmount:
+        case AnonymizeMyceAmount:
             nAnonymizeMyceAmount = value.toInt();
             settings.setValue("nAnonymizeMyceAmount", nAnonymizeMyceAmount);
-            emit anonymizePivxAmountChanged(nAnonymizeMyceAmount);
+            emit anonymizeMyceAmountChanged(nAnonymizeMyceAmount);
             break;
         case CoinControlFeatures:
             fCoinControlFeatures = value.toBool();
