@@ -81,8 +81,8 @@ bool fVerifyingBlocks = false;
 unsigned int nCoinCacheSize = 5000;
 bool fAlerts = DEFAULT_ALERTS;
 
-unsigned int nLastOldPoSBlock = 17100;
-unsigned int nHardForkBlock = 112200;
+int nLastOldPoSBlock = 17100;
+int nHardForkBlock = 112200;
 unsigned int nStakeMinAge = 12 * 60 * 60; // 12 hours
 unsigned int nStakeMinAgeOld = 24 * 60 * 60; // 24 hours
 unsigned int nStakeMaxAge = 30 * 24 * 60 * 60; // 30 days
